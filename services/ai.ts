@@ -1,15 +1,15 @@
 // services/ai.ts
 import { Task } from '../types/task';
 
-// Lee la clave definida en tu archivo .env
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 export const parseDumpWithAI = async (rawText: string): Promise<Task[]> => {
   if (!GEMINI_API_KEY) {
-    throw new Error('No se encontró la variable EXPO_PUBLIC_GEMINI_API_KEY en el entorno.');
+    throw new Error('Falta la variable EXPO_PUBLIC_GEMINI_API_KEY en el archivo .env');
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Modelo actualizado según el requerimiento de la API
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 
   const prompt = `
 Eres un asistente de productividad minimalista. El usuario te dará un texto desordenado con pendientes ("brain dump").
@@ -31,6 +31,7 @@ Texto del usuario:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY,
       },
       body: JSON.stringify({
         contents: [
@@ -46,9 +47,9 @@ Texto del usuario:
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Error de respuesta Gemini:', errorData);
-      throw new Error(`Error en API Gemini: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Detalle error Gemini:', errorText);
+      throw new Error(`Error en API Gemini: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
