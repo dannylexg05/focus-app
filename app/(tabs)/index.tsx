@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
-  View,
   TextInput,
   TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
-import { Task } from '../../types/task';
-import { getTasks, saveTasks } from '../../services/storage';
-import { parseDumpWithAI } from '../../services/ai';
+  View,
+} from "react-native";
+import { parseDumpWithAI } from "../../services/ai";
+import { getTasks, saveTasks } from "../../services/storage";
+import { Task } from "../../types/task";
 
 export default function HomeScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [dumpText, setDumpText] = useState('');
+  const [dumpText, setDumpText] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Cargar tareas al abrir la app
@@ -34,7 +38,7 @@ export default function HomeScreen() {
   // Marcar/desmarcar tarea
   const toggleTask = async (id: string) => {
     const updated = tasks.map((t) =>
-      t.id === id ? { ...t, completed: !t.completed } : t
+      t.id === id ? { ...t, completed: !t.completed } : t,
     );
     setTasks(updated);
     await saveTasks(updated);
@@ -51,12 +55,12 @@ export default function HomeScreen() {
       setTasks(combined);
       await saveTasks(combined);
 
-      setDumpText('');
+      setDumpText("");
       setModalVisible(false);
     } catch (error) {
       Alert.alert(
-        'Error',
-        'No se pudo conectar con la IA. Revisa tu API key en services/ai.ts e inténtalo de nuevo.'
+        "Error",
+        "No se pudo conectar con la IA. Revisa tu API key e inténtalo de nuevo.",
       );
     } finally {
       setLoading(false);
@@ -79,9 +83,13 @@ export default function HomeScreen() {
           >
             <Text style={styles.cardTitle}>{activeTask.title}</Text>
             <View style={styles.tagBadge}>
-              <Text style={styles.tagText}>{activeTask.priority.toUpperCase()}</Text>
+              <Text style={styles.tagText}>
+                {activeTask.priority.toUpperCase()}
+              </Text>
             </View>
-            <Text style={styles.cardHint}>Toca para marcar como completada ✓</Text>
+            <Text style={styles.cardHint}>
+              Toca para marcar como completada ✓
+            </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyCard}>
@@ -105,8 +113,10 @@ export default function HomeScreen() {
               style={[styles.taskRow, item.completed && styles.taskRowDone]}
               onPress={() => toggleTask(item.id)}
             >
-              <Text style={[styles.taskRowText, item.completed && styles.strike]}>
-                {item.completed ? '✓ ' : '○ '} {item.title}
+              <Text
+                style={[styles.taskRowText, item.completed && styles.strike]}
+              >
+                {item.completed ? "✓ " : "○ "} {item.title}
               </Text>
             </TouchableOpacity>
           )}
@@ -124,44 +134,68 @@ export default function HomeScreen() {
 
       {/* MODAL BRAIN DUMP */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Vaciado Mental</Text>
-            <Text style={styles.modalSubtitle}>
-              Escribe todo lo que tienes pendiente sin preocuparte por el orden. La IA extraerá tus 3 prioridades.
-            </Text>
-
-            <TextInput
-              style={styles.textArea}
-              placeholder="Ej: Tengo que terminar el reporte de finanzas antes de las 5, comprar leche, responder correos atrasados..."
-              placeholderTextColor="#737373"
-              multiline
-              numberOfLines={5}
-              value={dumpText}
-              onChangeText={setDumpText}
-            />
-
-            {loading ? (
-              <ActivityIndicator size="large" color="#ffffff" style={{ marginVertical: 20 }} />
-            ) : (
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.btn, styles.btnCancel]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.btnTextCancel}>Cancelar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.btn, styles.btnConfirm]}
-                  onPress={handleProcessDump}
-                >
-                  <Text style={styles.btnTextConfirm}>Organizar con IA</Text>
+        <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ width: "100%" }}
+          >
+            <Pressable style={styles.modalContent} onPress={() => {}}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Vaciado Mental</Text>
+                <TouchableOpacity onPress={Keyboard.dismiss}>
+                  <Text style={styles.dismissKeyboardText}>
+                    Ocultar teclado
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
-        </View>
+
+              <Text style={styles.modalSubtitle}>
+                Escribe todo lo que tienes pendiente sin preocuparte por el
+                orden. La IA extraerá tus 3 prioridades.
+              </Text>
+
+              <TextInput
+                style={styles.textArea}
+                placeholder="Ej: Terminar reporte, comprar leche, responder correos..."
+                placeholderTextColor="#737373"
+                multiline
+                numberOfLines={5}
+                value={dumpText}
+                onChangeText={setDumpText}
+              />
+
+              {loading ? (
+                <ActivityIndicator
+                  size="large"
+                  color="#ffffff"
+                  style={{ marginVertical: 20 }}
+                />
+              ) : (
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.btn, styles.btnCancel]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.btnTextCancel}>Cancelar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.btn, styles.btnConfirm]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      handleProcessDump();
+                    }}
+                  >
+                    <Text style={styles.btnTextConfirm}>Organizar con IA</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
@@ -170,7 +204,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: "#0f172a",
     paddingHorizontal: 20,
   },
   focusSection: {
@@ -178,63 +212,63 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionLabel: {
-    color: '#64748b',
+    color: "#64748b",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1.2,
     marginBottom: 10,
   },
   card: {
-    backgroundColor: '#1e293b',
+    backgroundColor: "#1e293b",
     padding: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
   },
   cardTitle: {
-    color: '#f8fafc',
+    color: "#f8fafc",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
   },
   tagBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#0284c7',
+    alignSelf: "flex-start",
+    backgroundColor: "#0284c7",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     marginBottom: 16,
   },
   tagText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   cardHint: {
-    color: '#94a3b8',
+    color: "#94a3b8",
     fontSize: 12,
   },
   emptyCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: "#1e293b",
     padding: 24,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
   },
   emptyEmoji: {
     fontSize: 32,
     marginBottom: 8,
   },
   emptyTitle: {
-    color: '#f8fafc',
+    color: "#f8fafc",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptySubtitle: {
-    color: '#64748b',
+    color: "#64748b",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
   },
   listSection: {
@@ -243,73 +277,83 @@ const styles = StyleSheet.create({
   taskRow: {
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: "#1e293b",
   },
   taskRowDone: {
     opacity: 0.4,
   },
   taskRowText: {
-    color: '#cbd5e1',
+    color: "#cbd5e1",
     fontSize: 15,
   },
   strike: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: '#2563eb',
+    alignSelf: "center",
+    backgroundColor: "#2563eb",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 30,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
   },
   fabText: {
-    color: '#ffffff',
-    fontWeight: '700',
+    color: "#ffffff",
+    fontWeight: "700",
     fontSize: 15,
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
   modalContent: {
-    backgroundColor: '#1e293b',
+    backgroundColor: "#1e293b",
     padding: 24,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dismissKeyboardText: {
+    color: "#38bdf8",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   modalTitle: {
-    color: '#f8fafc',
+    color: "#f8fafc",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   modalSubtitle: {
-    color: '#94a3b8',
+    color: "#94a3b8",
     fontSize: 13,
     marginTop: 4,
     marginBottom: 16,
   },
   textArea: {
-    backgroundColor: '#0f172a',
+    backgroundColor: "#0f172a",
     borderRadius: 12,
     padding: 16,
-    color: '#f8fafc',
-    textAlignVertical: 'top',
+    color: "#f8fafc",
+    textAlignVertical: "top",
     fontSize: 14,
     height: 120,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 20,
     gap: 12,
   },
@@ -317,20 +361,20 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   btnCancel: {
-    backgroundColor: '#334155',
+    backgroundColor: "#334155",
   },
   btnConfirm: {
-    backgroundColor: '#2563eb',
+    backgroundColor: "#2563eb",
   },
   btnTextCancel: {
-    color: '#94a3b8',
-    fontWeight: '600',
+    color: "#94a3b8",
+    fontWeight: "600",
   },
   btnTextConfirm: {
-    color: '#ffffff',
-    fontWeight: '700',
+    color: "#ffffff",
+    fontWeight: "700",
   },
 });
