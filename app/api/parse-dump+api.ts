@@ -1,3 +1,5 @@
+import { callGeminiWithRetry, describeGeminiError } from '../../services/gemini';
+
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -14,8 +16,6 @@ export async function POST(request: Request) {
     return Response.json({ error: 'rawText es requerido' }, { status: 400 });
   }
 
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
-
   const prompt = `
 Eres un asistente de productividad minimalista. El usuario te dará un texto desordenado con pendientes ("brain dump").
 Tu objetivo es seleccionar únicamente las 3 tareas prioritarias y más accionables.
@@ -31,26 +31,19 @@ Texto del usuario:
 "${rawText}"
 `;
 
-  const geminiResponse = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
+  const geminiResponse = await callGeminiWithRetry(apiKey, {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.2,
+      responseMimeType: 'application/json',
     },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-      },
-    }),
   });
 
   if (!geminiResponse.ok) {
     const errorText = await geminiResponse.text();
     console.error('Detalle error Gemini:', errorText);
     return Response.json(
-      { error: `Error en API Gemini: ${geminiResponse.status}` },
+      { error: describeGeminiError(geminiResponse.status, errorText) },
       { status: 502 },
     );
   }
