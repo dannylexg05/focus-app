@@ -19,6 +19,12 @@ import { parseDumpWithAI } from "../../services/ai";
 import { getTasks, saveTasks } from "../../services/storage";
 import { Task } from "../../types/task";
 
+const PRIORITY_ORDER: Record<Task["priority"], number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
 export default function HomeScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -67,8 +73,10 @@ export default function HomeScreen() {
     }
   };
 
-  // La tarea principal es la primera pendiente
-  const activeTask = tasks.find((t) => !t.completed);
+  // La tarea principal es la pendiente de mayor prioridad
+  const activeTask = [...tasks]
+    .filter((t) => !t.completed)
+    .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])[0];
 
   return (
     <SafeAreaView style={styles.container}>
